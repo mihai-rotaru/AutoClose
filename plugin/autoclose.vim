@@ -43,7 +43,6 @@
 "             at end of line, added double open->newline, September 19, 2007
 "    1.0.1 -- Cruft from other parts of the mapping, knew I shouldn't have
 "             released the first as 1.0, April 3, 2007
-
 " Setup -----------------------------------------------------{{{2
 if exists('g:autoclose_loaded') || &cp
     finish
@@ -56,6 +55,28 @@ let s:cotstate = &completeopt
 if !exists('g:autoclose_on')
     let g:autoclose_on = 1
 endif
+
+fun <SID>MapEnterTab()
+    echom "mapping <CR> and <Tab> in insert mode"
+    inoremap <silent> <CR> <C-R>=<SID>CloseStackPop('')<CR><Esc>o
+    inoremap <silent> <Tab> <C-R>=<SID>CloseStackPop('')<CR><Esc>a 
+endf
+
+fun <SID>UnMapEnterTab()
+    if mapcheck( "<CR>", 'i') != ''
+        echom "<CR> is mapped in insert mode, unmapping..."
+        iunmap <CR>
+    else
+        echom "no mapping for <CR> in insert mode"
+    endif
+
+    if mapcheck( "<Tab>", 'i') != ''
+        echom "<Tab> is mapped in insert mode, unmapping..."
+        iunmap <Tab>
+    else
+        echom "no mapping for <Tab> in insert mode"
+    endif
+endf
 
 " (Toggle) Mappings -----------------------------{{{1
 "
@@ -76,6 +97,7 @@ fun <SID>ToggleAutoCloseMappings() " --- {{{2
         iunmap <BS>
         iunmap <C-h>
         iunmap <Esc>
+        call <SID>UnMapEnterTab()
         let g:autoclose_on = 0
         echo "AutoClose Off"
     else
@@ -92,7 +114,10 @@ fun <SID>ToggleAutoCloseMappings() " --- {{{2
         inoremap <silent> <C-h> <C-R>=<SID>OpenCloseBackspace()<CR>
         inoremap <silent> <Esc> <C-R>=<SID>CloseStackPop('')<CR><Esc>
         inoremap <silent> <C-[> <C-R>=<SID>CloseStackPop('')<CR><C-[>
-        "the following simply creates an ambiguous mapping so vim fully
+        "        XXX
+
+        call <SID>MapEnterTab()
+        "the following simply creates an ambiguous mapping so vim fully   sdsad''asdasd'
         "processes the escape sequence for terminal keys, see 'ttimeout' for a
         "rough explanation, this just forces it to work
         if &term[:4] == "xterm"
@@ -109,6 +134,8 @@ let s:closeStack = []
 
 " AutoClose Utilities -----------------------------------------{{{1
 function <SID>OpenSpecial(ochar,cchar) " ---{{{2
+    echom "OpenSpecial"
+    call <SID>MapEnterTab()
     let line = getline('.')
     let col = col('.') - 2
     "echom string(col).':'.line[:(col)].'|'.line[(col+1):]
@@ -123,28 +150,31 @@ function <SID>OpenSpecial(ochar,cchar) " ---{{{2
 endfunction
 
 function <SID>CloseStackPush(char) " ---{{{2
-    "echom "push"
+    echom "push"
+    call <SID>MapEnterTab()
     let line = getline('.')
     let col = col('.')-2
     if (col) < 0
         call setline('.',a:char.line)
     else
-        "echom string(col).':'.line[:(col)].'|'.line[(col+1):]
+        "        echom string(col).':'.line[:(col)].'|'.line[(col+1):]
         call setline('.',line[:(col)].a:char.line[(col+1):])
     endif
     call insert(s:closeStack, a:char)
-    "echom join(s:closeStack,'').' -- '.a:char
+    "    echom join(s:closeStack,'').' -- '.a:char
     return ''
 endf
 
 function <SID>JumpOut(char) " ----------{{{2
+    echom "JumpOut"
+    call <SID>UnMapEnterTab()
     let column = col('.') - 1
     let line = getline('.')
     let mcol = match(line[column :], a:char)
     if a:char != '' &&  mcol >= 0
         "Yeah, this is ugly but vim actually requires each to be special
         "cased to avoid screen flashes/not doing the right thing.
-        echom len(line).' '.(column+mcol)
+        "        echom len(line).' '.(column+mcol)
         if line[column] == a:char
             return "\<Right>"
         elseif column+mcol == len(line)-1
@@ -156,8 +186,9 @@ function <SID>JumpOut(char) " ----------{{{2
         return a:char
     endif
 endf
+
 function <SID>CloseStackPop(char) " ---{{{2
-    "echom "pop"
+    echom "pop"
     if(a:char == '')
         pclose
     endif
@@ -168,13 +199,16 @@ function <SID>CloseStackPop(char) " ---{{{2
     let line = getline('.')
     let popped = ''
     let lastpop = ''
-    "echom join(s:closeStack,'').' || '.lastpop
+    "    echom join(s:closeStack,'').' || '.lastpop
     while len(s:closeStack) > 0 && ((lastpop == '' && popped == '') || lastpop != a:char)
         let lastpop = remove(s:closeStack,0)
         let popped .= lastpop
         "echom join(s:closeStack,'').' || '.lastpop.' || '.popped
     endwhile
-    "echom ' --> '.popped
+    
+    call <SID>UnMapEnterTab()
+    
+    "    echom ' --> '.popped
     if line[column : column+strlen(popped)-1] != popped
         return <SID>JumpOut('')
     endif
@@ -187,18 +221,20 @@ function <SID>CloseStackPop(char) " ---{{{2
 endf
 
 function <SID>QuoteDelim(char) " ---{{{2
-  let line = getline('.')
-  let col = col('.')
-  if line[col - 2] == "\\"
-    "Inserting a quoted quotation mark into the string
-    return a:char
-  elseif line[col - 1] == a:char
-    "Escaping out of the string
-    return "\<C-R>=".s:SID()."CloseStackPop(\"\\".a:char."\")\<CR>"
-  else
-    "Starting a string
-    return a:char."\<C-R>=".s:SID()."CloseStackPush(\"\\".a:char."\")\<CR>"
-  endif
+    echom "QuoteDelim"
+    call <SID>MapEnterTab()
+    let line = getline('.')
+    let col = col('.')
+    if line[col - 2] == "\\"
+        "Inserting a quoted quotation mark into the string
+        return a:char
+    elseif line[col - 1] == a:char
+        "Escaping out of the string
+        return "\<C-R>=".s:SID()."CloseStackPop(\"\\".a:char."\")\<CR>"
+    else
+        "Starting a string
+        return a:char."\<C-R>=".s:SID()."CloseStackPush(\"\\".a:char."\")\<CR>"
+    endif
 endf
 
 " The strings returned from QuoteDelim aren't in scope for <SID>, so I
@@ -208,27 +244,31 @@ function s:SID()
 endfun
 
 function <SID>OpenCloseBackspace() " ---{{{2
+    echom "OpenCloseBackspace"
+    call <SID>UnMapEnterTab()
     "if pumvisible()
     "    pclose
     "    call <SID>StopOmni()
     "    return "\<C-E>"
     "else
-        let curline = getline('.')
-        let curpos = col('.')
-        let curletter = curline[curpos-1]
-        let prevletter = curline[curpos-2]
-        if (prevletter == '"' && curletter == '"') ||
-\          (prevletter == "'" && curletter == "'") ||
-\          (prevletter == "(" && curletter == ")") ||
-\          (prevletter == "{" && curletter == "}") ||
-\          (prevletter == "[" && curletter == "]")
-            if len(s:closeStack) > 0
-                call remove(s:closeStack,0)
-            endif
-            return "\<Delete>\<BS>"
-        else
-            return "\<BS>"
+    let curline = getline('.')
+    let curpos = col('.')
+    let curletter = curline[curpos-1]
+    let prevletter = curline[curpos-2]
+    if (prevletter == '"' && curletter == '"') ||
+                \          (prevletter == "'" && curletter == "'") ||
+                \          (prevletter == "(" && curletter == ")") ||
+                \          (prevletter == "{" && curletter == "}") ||
+                \          (prevletter == "[" && curletter == "]")
+        if len(s:closeStack) > 0
+            call remove(s:closeStack,0)
         endif
+        "            return "\<Delete>\<BS>"
+        return "\<Delete>"
+    else
+        "            return "\<BS>"
+        return "\<BS>"
+    endif
     "endif
 endf
 
