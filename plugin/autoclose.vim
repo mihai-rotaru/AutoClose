@@ -57,24 +57,24 @@ if !exists('g:autoclose_on')
 endif
 
 fun <SID>MapEnterTab()
-    echom "mapping <CR> and <Tab> in insert mode"
+"    echom "mapping <CR> and <Tab> in insert mode"
     inoremap <silent> <CR> <C-R>=<SID>CloseStackPop('')<CR><Esc>o
     inoremap <silent> <Tab> <C-R>=<SID>CloseStackPop('')<CR><Esc>a 
 endf
 
 fun <SID>UnMapEnterTab()
     if mapcheck( "<CR>", 'i') != ''
-        echom "<CR> is mapped in insert mode, unmapping..."
+"        echom "<CR> is mapped in insert mode, unmapping..."
         iunmap <CR>
     else
-        echom "no mapping for <CR> in insert mode"
+""        echom "no mapping for <CR> in insert mode"
     endif
 
     if mapcheck( "<Tab>", 'i') != ''
-        echom "<Tab> is mapped in insert mode, unmapping..."
+"        echom "<Tab> is mapped in insert mode, unmapping..."
         iunmap <Tab>
     else
-        echom "no mapping for <Tab> in insert mode"
+"        echom "no mapping for <Tab> in insert mode"
     endif
 endf
 
@@ -134,7 +134,7 @@ let s:closeStack = []
 
 " AutoClose Utilities -----------------------------------------{{{1
 function <SID>OpenSpecial(ochar,cchar) " ---{{{2
-    echom "OpenSpecial"
+"    echom "OpenSpecial"
     call <SID>MapEnterTab()
     let line = getline('.')
     let col = col('.') - 2
@@ -150,7 +150,7 @@ function <SID>OpenSpecial(ochar,cchar) " ---{{{2
 endfunction
 
 function <SID>CloseStackPush(char) " ---{{{2
-    echom "push"
+"    echom "push"
     call <SID>MapEnterTab()
     let line = getline('.')
     let col = col('.')-2
@@ -166,7 +166,7 @@ function <SID>CloseStackPush(char) " ---{{{2
 endf
 
 function <SID>JumpOut(char) " ----------{{{2
-    echom "JumpOut"
+"    echom "JumpOut"
     call <SID>UnMapEnterTab()
     let column = col('.') - 1
     let line = getline('.')
@@ -188,7 +188,7 @@ function <SID>JumpOut(char) " ----------{{{2
 endf
 
 function <SID>CloseStackPop(char) " ---{{{2
-    echom "pop"
+"    echom "pop"
     if(a:char == '')
         pclose
     endif
@@ -221,7 +221,7 @@ function <SID>CloseStackPop(char) " ---{{{2
 endf
 
 function <SID>QuoteDelim(char) " ---{{{2
-    echom "QuoteDelim"
+"    echom "QuoteDelim"
     call <SID>MapEnterTab()
     let line = getline('.')
     let col = col('.')
@@ -244,7 +244,7 @@ function s:SID()
 endfun
 
 function <SID>OpenCloseBackspace() " ---{{{2
-    echom "OpenCloseBackspace"
+"    echom "OpenCloseBackspace"
     call <SID>UnMapEnterTab()
     "if pumvisible()
     "    pclose
